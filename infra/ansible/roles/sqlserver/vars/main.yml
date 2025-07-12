@@ -1,0 +1,2 @@
+---
+sql_admin_password: "{{ vault_sql_password | default('StrongAPassword123@') }}"

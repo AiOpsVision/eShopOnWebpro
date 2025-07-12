@@ -1,0 +1,22 @@
+---
+- name: Ensure Docker is installed
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+- name: Pull latest app image
+      community.docker.docker_image:
+        name: "{{ app_image }}"
+        source: pull
+        
+- name: Run/update container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ app_image }}"
+        state: started
+        restart_policy: always
+        published_ports:
+          - "{{ publish_port }}"
+        env:
+          ASPNETCORE_ENVIRONMENT: "Production"

@@ -1,0 +1,31 @@
+---
+- name: run eShopOnWebapp
+  hosts: webapp
+  force_handlers: yes
+  serial: 1
+  become: true
+
+  pre_tasks:
+    - name: Ensure Python is installed
+      raw: test -e /usr/bin/python3 || (apt update && apt install -y python3)
+      changed_when: false
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == 'Debian'
+
+  roles:
+    - webapp
+        
+ 
+        
+- name: run eShopOnWeb database (sqlserver)
+  hosts: sqlserver
+  force_handlers: yes
+  vars_files:
+   - secrets.yml
+  serial: 1
+  become: true
+  roles:
+    - sqlserver

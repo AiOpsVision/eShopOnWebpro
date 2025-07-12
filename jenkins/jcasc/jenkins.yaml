@@ -1,0 +1,140 @@
+jenkins:
+  systemMessage: "<h2 style='font-size:28px;color:#2d6a4f;'>Jenkins for eShopOnWeb CI/CD</h2>"
+  numExecutors: 2
+  mode: NORMAL
+  
+  markupFormatter:
+    rawHtml:
+      disableSyntaxHighlighting: false
+  
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER}"
+          password: "${JENKINS_ADMIN_PASS}"
+        - id: "${JENKINS_DEV1_USER}"
+          password: "${JENKINS_DEV1_PASS}"
+        - id: "${JENKINS_DEV2_USER}"
+          password: "${JENKINS_DEV2_PASS}"
+
+  authorizationStrategy:
+    roleBased:
+      roles:
+        global:
+          - name: "admin"
+            description: "Jenkins administrators"
+            permissions:
+              - "Overall/Administer"
+              - "Overall/Read"
+            entries:
+              - user: "${JENKINS_ADMIN_USER}"  
+          - name: "developer"
+            description: "Jenkins developers"
+            permissions:
+              - "Job/Build"
+              - "Job/Read"
+            entries:
+              - user: "${JENKINS_DEV1_USER}"
+              - user: "${JENKINS_DEV2_USER}"
+          - name: "readonly"
+            description: "Jenkins authenticatedUsers"
+            permissions:
+              - "Overall/Read"
+              - "Job/Read"
+            entries:
+              - user: "authenticated"
+  
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+    adminAddress: "${JENKINS_ADMIN_EMAIL}"
+  
+  mailer:
+    smtpHost: "smtp.gmail.com"
+    smtpPort: 587
+    useSsl: false
+    useTls: true
+    authentication:
+      username: "${GMAIL_USER}"
+      password: "${GMAIL_PASS}"
+    replyToAddress: "${GMAIL_USER}"
+    charset: "UTF-8"
+    
+  slackNotifier:
+    teamDomain: "${SLACK_TEAM_DOMAIN}"
+    tokenCredentialId: "slack-webhook"
+    room: "${SLACK_ROOM}"
+    
+  thinBackup:
+    backupPath: "/var/jenkins_home/backup"
+    fullBackupSchedule: "0 2 * * *"
+    diffBackupSchedule: "H/15 * * * *"
+    cleanupDiff: true
+    nrMaxStoredFull: 7
+    backupBuildResults: true
+    backupNextBuildNumber: true
+    backupPluginArchives: true
+        
+credentials:
+  system:
+    domainCredentials:
+      - domain:
+          name: ""
+          specifications: []
+        credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "github-creds"
+              username: "${GITHUB_USER}"
+              password: "${GITHUB_PAT}"
+              description: "GitHub Credentials"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "gmail-creds"
+              username: "${GMAIL_USER}"
+              password: "${GMAIL_PASS}"
+              description: "Gmail SMTP Credentials"
+          - string:
+              scope: GLOBAL
+              id: "slack-webhook"
+              secret: "${SLACK_TOKEN}"
+              description: "Slack Notification Webhook"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "dockerhub-creds"
+              username: "${DOCKERHUB_USER}"
+              password: "${DOCKERHUB_PASS}"
+              description: "Docker Hub Credentials"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "aws-access-creds"
+              username: "access-key"
+              password: "${AWS_ACCESS_KEY_ID}"
+              description: "AWS Access Credentials for Terraform"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "aws-secret-creds"
+              username: "secret-key"
+              password: "${AWS_SECRET_ACCESS_KEY}"
+              description: "AWS Secret Credentials for Terraform"
+          - sshUserPrivateKey:
+              scope: GLOBAL
+              id: "ansible-ssh-key"
+              username: "ubuntu"  
+              description: "SSH key for Ansible to access EC2"
+              privateKeySource:
+                  directEntry:
+                    privateKey: "${readFile:${ANSIBLE_SSH_KEY_PATH}}"
+              
+
+              
+tool:
+  git:
+    installations:
+      - name: "Default"
+        home: "/usr/bin/git"

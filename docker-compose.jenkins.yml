@@ -1,0 +1,54 @@
+services:
+  jenkins:
+    build:
+      context: ./jenkins
+    image: myjenkins:latest
+    container_name: jenkins
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jenkins_home:/var/jenkins_home
+      - ./jenkins/jcasc:/var/jenkins_home/casc_configs
+      - ./jenkins/plugins.txt:/usr/share/jenkins/ref/plugins.txt
+      - ./jenkins/init.groovy.d:/usr/share/jenkins/ref/init.groovy.d
+      - ./jenkins/jobs.groovy:/usr/share/jenkins/ref/jobs.groovy
+
+    command: >
+      bash -c "java -jar /usr/share/jenkins/jenkins.war --httpPort=8080 2>&1 | tee /var/jenkins_home/jenkins-syslog.log"
+    environment:
+      - CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/jenkins.yaml
+      - CASC_LOG_LEVEL=FINE
+      - JENKINS_ADMIN_USER=${JENKINS_ADMIN_USER}
+      - JENKINS_ADMIN_PASS=${JENKINS_ADMIN_PASS}
+      - JENKINS_DEV1_USER=${JENKINS_DEV1_USER}
+      - JENKINS_DEV1_PASS=${JENKINS_DEV1_PASS}
+      - JENKINS_DEV2_USER=${JENKINS_DEV2_USER}
+      - JENKINS_DEV2_PASS=${JENKINS_DEV2_PASS}
+      - GITHUB_USER=${GITHUB_USER}
+      - GITHUB_PAT=${GITHUB_PAT}
+      - GMAIL_USER=${GMAIL_USER}
+      - GMAIL_PASS=${GMAIL_PASS}
+      - SLACK_TOKEN=${SLACK_TOKEN}
+      - SLACK_TEAM_DOMAIN=${SLACK_TEAM_DOMAIN}
+      - SLACK_ROOM=${SLACK_ROOM}
+      - JENKINS_ADMIN_EMAIL=${JENKINS_ADMIN_EMAIL}
+      - JENKINS_BASE_URL=${JENKINS_BASE_URL}
+      - JENKINS_INSTALL_RUN_SETUPWIZARD=false
+      - DOCKERHUB_USER=${DOCKERHUB_USER}
+      - DOCKERHUB_PASS=${DOCKERHUB_PASS}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - ANSIBLE_SSH_KEY_PATH=${ANSIBLE_SSH_KEY_PATH}
+    networks:
+      - eshop-network
+    restart: unless-stopped
+
+volumes:
+  jenkins_home:
+    
+
+networks:
+  eshop-network:

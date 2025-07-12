@@ -1,0 +1,75 @@
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    environment {
+        ENV = 'dev' 
+        TF_DIR = "infra/terraform/environments/${ENV}"
+        ANSIBLE_DIR = "infra/ansible"
+        INVENTORY_PATH = "${ANSIBLE_DIR}/inventories/${ENV}/hosts"
+        VAULT_PASS = "${ANSIBLE_DIR}/inventories/${ENV}/group_vars/vault_pass.txt"
+
+        SSH_KEY_ID = 'jenkins-key' 
+        REMOTE_USER = 'ubuntu'
+        REMOTE_HOST = 'your-ec2-ip' 
+        DOCKER_USER = 'your-dockerhub-user'
+        IMAGE_NAME = 'eshoponwebimg'
+        IMAGE_TAG = 'latest'
+        DOCKER_IMAGE = "${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
+    }
+
+    stages {
+
+        stage('Terraform Apply') {
+		  steps {
+			withAWS(credentials: 'aws-creds') {
+			  dir(env.TF_DIR) {
+				sh 'terraform init -input=false'
+				sh 'terraform apply -auto-approve -var="aws_access_key=${AWS_ACCESS_KEY_ID}" -var="aws_secret_key=${AWS_SECRET_ACCESS_KEY}"'
+			  }
+			}
+		  }
+		}
+
+
+                
+        stage('Run Ansible Playbook') {
+            steps {
+                sshagent(['ansible-ssh-key']) {
+                    sh """
+                        ansible-playbook \
+							-i ${ANSIBLE_DIR}/aws_ec2.yml \
+							${ANSIBLE_DIR}/playbooks/site.yml \
+							--ssh-extra-args='-o StrictHostKeyChecking=no'
+							"""
+                }
+            }
+        }
+
+
+        stage('Health Check') {
+            steps {
+                sh """
+                    echo "Checking app health at http://${REMOTE_HOST} ..."
+                    curl -f http://${REMOTE_HOST} || (echo '❌ Health check failed' && exit 1)
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            echo '📦 CD Pipeline Completed'
+        }
+        success {
+            echo '✅ Deployed successfully to ${ENV}'
+        }
+        failure {
+            echo '❌ Deployment failed'
+        }
+    }
+}

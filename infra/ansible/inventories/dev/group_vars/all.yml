@@ -1,0 +1,9 @@
+app_name: "eshoponweb"
+app_git_repo: "git@github.com:AiOpsVision/eShopOnWeb.git"
+app_path: "/opt/eshoponweb"
+dotnet_version: "8.0"
+app_port: 5000
+sql_server_host: "localhost"
+sql_admin_user: "SA"
+sql_user: "ahmed"              
+

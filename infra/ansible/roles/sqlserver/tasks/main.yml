@@ -1,0 +1,33 @@
+---
+- name: Run SQL Server container
+  docker_container:
+    name: sqlserver
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    state: started
+    restart_policy: always
+    ports:
+      - "1433:1433"
+    env:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "{{ sql_admin_password }}"
+    volumes:
+      - /data/sqlserver:/var/opt/mssql
+
+- name: Wait for SQL Server to start
+  wait_for:
+    host: localhost
+    port: 1433
+    delay: 15
+    timeout: 60
+    state: started
+
+- name: Copy init-db.sql to container host
+  copy:
+    src: init-db.sql
+    dest: /tmp/init-db.sql
+
+- name: Run SQL init script to create DBs and users
+  shell: |
+    docker exec sqlserver /opt/mssql-tools/bin/sqlcmd \
+      -S localhost -U SA -P "{{ sql_admin_password }}" \
+      -i /tmp/init-db.sql

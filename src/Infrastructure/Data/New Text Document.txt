@@ -1,0 +1,30 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
+using System.IO;
+
+namespace Microsoft.eShopWeb.Infrastructure.Data
+{
+    public class CatalogContextFactory : IDesignTimeDbContextFactory<CatalogContext>
+    {
+        public CatalogContext CreateDbContext(string[] args)
+        {
+            // مسار مجلد Web علشان نقرأ منه appsettings.json
+            var basePath = Path.Combine(Directory.GetCurrentDirectory(), "../Web");
+
+            // تحميل إعدادات الاتصال
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(basePath)
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            var optionsBuilder = new DbContextOptionsBuilder<CatalogContext>();
+
+            var connectionString = configuration.GetConnectionString("CatalogConnection");
+
+            optionsBuilder.UseSqlServer(connectionString);
+
+            return new CatalogContext(optionsBuilder.Options);
+        }
+    }
+}

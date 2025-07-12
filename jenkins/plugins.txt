@@ -1,0 +1,83 @@
+# Jenkins Plugins ID
+# 🔧 Core Jenkins Suggested Plugins (GUI default)
+configuration-as-code
+structs
+script-security
+bouncycastle-api
+ssh-credentials
+workflow-step-api
+workflow-api
+workflow-support
+pipeline-stage-step
+pipeline-model-api
+pipeline-model-extensions
+pipeline-model-definition
+pipeline-github-lib
+pipeline-stage-view
+workflow-aggregator
+
+# 🧩 GitHub + SCM
+git
+git-client
+github
+github-branch-source
+
+# 📬 Notifications
+mailer
+email-ext
+slack
+
+# 🔐 Credentials
+credentials
+credentials-binding
+plain-credentials
+
+# 🐳 Docker
+docker-workflow
+docker-plugin
+docker-java-api
+
+# 📊 Static Code Analysis
+sonar
+warnings-ng
+
+# 💡 UI Enhancements
+blueocean
+dashboard-view
+build-monitor-plugin
+
+# 🧰 Utilities
+pipeline-utility-steps
+
+# Backup
+thinBackup
+
+
+matrix-auth
+
+sse-gateway
+
+# RBAC Role-based Authorization Strategy
+role-strategy
+
+# logs
+audit-trail
+#plugins used for Tests stage
+junit
+
+# for job seed
+job-dsl
+
+timestamper
+
+ws-cleanup
+
+ssh-agent
+
+aws-credentials
+
+pipeline-aws
+
+ansible
+ssh-credentials
+credentials

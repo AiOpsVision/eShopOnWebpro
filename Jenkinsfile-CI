@@ -1,0 +1,123 @@
+pipeline {     
+    agent any 
+
+    options { 
+        timestamps() 
+        buildDiscarder(logRotator(numToKeepStr: '20')) 
+    }
+
+    environment { 
+        DOTNET_VERSION = '8.0' 
+        IMAGE_NAME = 'eshoponwebimg' 
+        IMAGE_TAG = 'latest' 
+		DOTNET_ROOT = '/usr/share/dotnet'         
+		PATH = "/usr/share/dotnet:${env.PATH}"    
+    }
+
+    stages { 
+        stage('Checkout SCM') { 
+            steps { 
+                echo 'Checking out source code...' 
+                checkout scm 
+            }
+        }
+
+        stage('Restore Dependencies') { 
+            steps {
+                echo "Restoring NuGet packages..." 
+				sh "ls -la"
+				sh "pwd"
+                sh "dotnet restore eShopOnWeb.sln" 
+            }
+        }
+
+        stage('Build Application') { 
+            steps {
+                echo "Building the app..." 
+                sh "dotnet build eShopOnWeb.sln --configuration Release --no-restore" 
+            }
+        }
+
+        stage('Run Tests') {
+			steps {
+			  catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+				echo "Running all tests ..."
+				sh 'pwd'
+				sh 'ls -la'
+				sh 'mkdir -p test-results'
+				sh 'ls -la test-results'
+				sh 'dotnet tool install -g trx2junit || true'
+				sh 'export PATH="$PATH:$HOME/.dotnet/tools"'
+				sh 'dotnet test eShopOnWeb.sln --logger "trx;LogFileName=$(pwd)/test-results/TestResults.trx"'
+				sh 'ls -l $(pwd)/test-results'
+				sh '$HOME/.dotnet/tools/trx2junit $(pwd)/test-results/TestResults.trx'
+				junit 'test-results/*.xml'
+			  }
+			}
+		}
+
+        stage('Publish Artifacts') { 
+            steps {
+			  catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                echo "Publishing for deployment..." 
+                sh "dotnet publish src/Web/Web.csproj -c Release -o output --no-restore" 
+                archiveArtifacts artifacts: 'output/**', allowEmptyArchive: true 
+			  }
+            }
+        }
+
+		stage('Docker Login') { 
+            steps {
+			  catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+				echo "Logging in to Docker Hub..."
+				script {
+				  withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+				    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
+				  }
+				}
+			  }
+			}
+        }
+		
+        stage('Build Docker Image') { 
+            steps {
+			  catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+				echo "Building Docker image..." 
+				script {
+				  withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+				    sh "ls -l"
+					sh "ls -l docker"
+					sh "docker build -t $DOCKER_USER/${env.IMAGE_NAME}:${env.IMAGE_TAG} -f docker/Dockerfile ."
+				    }
+			    }
+              }
+            }   
+		}
+
+        stage('Push to Docker Hub') { 
+            steps {
+			  catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+				echo "Pushing Docker image to Docker Hub..." 
+				script {
+				  withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+				    sh "docker push $DOCKER_USER/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
+				    }
+				
+			    }
+			  }
+           }
+        }   
+	}
+    post { 
+        always { 
+            echo 'Cleaning workspace...' 
+            cleanWs() 
+        }
+        success { 
+            echo '✅ Pipeline finished successfully!' 
+        }
+        failure { 
+            echo '❌ Pipeline failed!' 
+        }
+    }
+}

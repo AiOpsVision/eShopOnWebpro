@@ -1,0 +1,7 @@
+---
+- name: restart eshoponweb service
+  systemd:
+    name: "eshoponweb"
+    enabled: true
+    state: restarted
+    daemon_reload: true
